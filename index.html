@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>詠み人知らず — 五七五リレー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFE3C8;
+    --paper-deep:#E4D5AE;
+    --paper-shadow:#C9B385;
+    --ink:#241F19;
+    --ink-soft:#6b6355;
+    --ink-faint:#a89c85;
+    --shu:#a5402a;
+    --shu-dark:#7c2e1e;
+    --gold:#a6812e;
+    --bg:#221e1c;
+    --bg-deep:#171513;
+    --circle:44px;
+    --gap:10px;
+    --colgap:34px;
+    --pad:26px;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:transparent;
+    font-family:'Zen Maru Gothic',sans-serif;
+    color:var(--ink);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .stage{
+    position:relative;
+    min-height:100vh;
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 40px;
+    background:
+      radial-gradient(ellipse at 50% -10%, #33302c 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+    overflow:hidden;
+  }
+  .stage::before{
+    content:"";
+    position:absolute;inset:0;
+    background-image:radial-gradient(circle at 20% 30%, rgba(255,255,255,0.03) 0, transparent 3px),
+                      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.025) 0, transparent 3px),
+                      radial-gradient(circle at 45% 85%, rgba(255,255,255,0.02) 0, transparent 3px);
+    background-size:180px 180px, 220px 220px, 160px 160px;
+    pointer-events:none;
+  }
+
+  header.title{
+    position:relative;
+    text-align:center;
+    margin-bottom:22px;
+    z-index:2;
+  }
+  header.title h1{
+    font-family:'Shippori Mincho',serif;
+    font-weight:700;
+    font-size:26px;
+    letter-spacing:0.12em;
+    color:#f1e7cf;
+    margin:0 0 4px;
+  }
+  header.title p{
+    font-size:11px;
+    letter-spacing:0.18em;
+    color:#8f8a80;
+    margin:0;
+  }
+
+  /* ---------- Tanzaku card ---------- */
+  .card-wrap{
+    position:relative;
+    z-index:2;
+    opacity:0;
+    transform:translateY(10px) scale(0.97);
+    transition:opacity .6s ease, transform .6s ease;
+    margin-bottom:22px;
+  }
+  .card-wrap.show{opacity:1;transform:translateY(0) scale(1);}
+
+  .tanzaku{
+    position:relative;
+    background:var(--paper);
+    padding:var(--pad) var(--pad) 40px;
+    box-shadow:
+      0 2px 0 var(--paper-shadow),
+      0 18px 36px -12px rgba(0,0,0,0.55),
+      0 2px 6px rgba(0,0,0,0.25);
+    clip-path:polygon(0% 1%,2% 0%,98% 0.5%,100% 2%,99.3% 98%,97% 100%,3% 99.5%,0.7% 97%);
+    display:flex;
+    flex-direction:row-reverse;
+    gap:var(--colgap);
+    align-items:flex-start;
+  }
+  .tanzaku::after{
+    content:"";
+    position:absolute;inset:0;
+    opacity:.5;
+    mix-blend-mode:multiply;
+    pointer-events:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .column{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .column .rows{
+    display:flex;
+    flex-direction:column;
+    gap:var(--gap);
+  }
+  .column .caption{
+    margin-top:14px;
+    font-family:'Shippori Mincho',serif;
+    font-size:11px;
+    letter-spacing:0.15em;
+    color:var(--ink-soft);
+  }
+
+  .letter-circle{
+    position:relative;
+    width:var(--circle);
+    height:var(--circle);
+    border-radius:50%;
+    border:1.4px solid var(--ink-faint);
+    background:rgba(255,255,255,0.18);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+    transition:border-color .3s ease, box-shadow .3s ease;
+  }
+  .letter-circle img{
+    width:82%;height:82%;object-fit:contain;
+    opacity:0;
+    transition:opacity .5s ease;
+  }
+  .letter-circle.revealed img{opacity:1;}
+
+  .letter-circle .flap{
+    position:absolute;inset:0;
+    border-radius:50%;
+    background:linear-gradient(155deg, var(--paper-deep) 0%, var(--paper) 60%);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,0.05);
+    opacity:0;
+    transform:scale(1) rotate(0deg);
+    transition:opacity .55s ease, transform .55s ease;
+    pointer-events:none;
+  }
+  .letter-circle .flap::after{
+    content:"";
+    position:absolute; right:2px; bottom:2px;
+    width:8px;height:8px;
+    background:var(--paper-shadow);
+    clip-path:polygon(100% 0,0 100%,100% 100%);
+    opacity:.7;
+  }
+  .letter-circle.filled .flap{opacity:1;}
+  .letter-circle.filled.no-hide .flap{opacity:0;}
+  .letter-circle.unfold .flap{
+    opacity:0;
+    transform:scale(0.75) rotate(-18deg) translateY(-4px);
+  }
+
+  .letter-circle.current{
+    border-color:var(--shu);
+    box-shadow:0 0 0 4px rgba(165,64,42,0.14);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 3px rgba(165,64,42,0.12);}
+    50%{box-shadow:0 0 0 7px rgba(165,64,42,0.05);}
+  }
+
+  .dai-tag{
+    display:none;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-bottom:12px;
+    font-family:'Shippori Mincho',serif;
+    font-size:13px;
+    letter-spacing:.1em;
+    color:var(--gold);
+  }
+  .dai-tag.show{display:flex;}
+  .dai-tag::before,.dai-tag::after{
+    content:"";
+    width:20px;height:1px;
+    background:rgba(166,129,46,0.5);
+  }
+  .dai-tag span{white-space:nowrap;}
+
+  .theme-field{
+    width:100%;
+    margin-bottom:18px;
+    text-align:left;
+  }
+  .theme-field label{
+    display:block;
+    font-size:11.5px;
+    color:#a89c85;
+    letter-spacing:.08em;
+    margin-bottom:6px;
+  }
+  .theme-field input{
+    width:100%;
+    box-sizing:border-box;
+    background:rgba(255,255,255,0.06);
+    border:1.4px solid rgba(255,255,255,0.16);
+    border-radius:10px;
+    padding:11px 14px;
+    font-family:'Shippori Mincho',serif;
+    font-size:14px;
+    color:#f1e7cf;
+    letter-spacing:.04em;
+  }
+  .theme-field input::placeholder{color:#6e685d;}
+  .theme-field input:focus{
+    outline:none;
+    border-color:var(--gold);
+  }
+
+  .hanko{
+    position:absolute;
+    left:14px; bottom:12px;
+    width:34px;height:34px;
+    border-radius:6px;
+    background:var(--shu);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,0.15), 0 3px 8px rgba(0,0,0,0.35);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Shippori Mincho',serif;
+    color:#f3e6cf;
+    font-size:16px;
+    transform:scale(0) rotate(-20deg);
+    opacity:0;
+    transition:transform .5s cubic-bezier(.2,1.4,.4,1), opacity .3s ease;
+  }
+  .hanko.in{transform:scale(1) rotate(-6deg);opacity:1;}
+
+  /* ---------- panels ---------- */
+  .panel{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:340px;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    animation:fadein .5s ease;
+  }
+  .panel.active{display:flex;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .panel p.lead{
+    font-size:13.5px;
+    line-height:1.9;
+    color:#cfc7b4;
+    margin:0 0 18px;
+  }
+  .panel h2{
+    font-family:'Shippori Mincho',serif;
+    font-size:18px;
+    color:#f1e7cf;
+    margin:0 0 10px;
+    letter-spacing:.06em;
+  }
+
+  .toggle-row{
+    display:flex;align-items:center;gap:8px;
+    font-size:12.5px;
+    color:#b9b09b;
+    margin-bottom:22px;
+    background:rgba(255,255,255,0.04);
+    padding:10px 14px;
+    border-radius:10px;
+  }
+  .toggle-row input{accent-color:var(--shu);width:16px;height:16px;}
+
+  button{
+    font-family:'Zen Maru Gothic',sans-serif;
+    font-weight:700;
+    border:none;
+    cursor:pointer;
+    border-radius:999px;
+    letter-spacing:.04em;
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  }
+  button:active{transform:scale(0.96);}
+  .btn-primary{
+    background:var(--shu);
+    color:#f7ead2;
+    font-size:15px;
+    padding:13px 34px;
+    box-shadow:0 8px 18px -6px rgba(165,64,42,0.55);
+  }
+  .btn-primary:hover{box-shadow:0 10px 22px -6px rgba(165,64,42,0.7);}
+  .btn-ghost{
+    background:transparent;
+    color:#cfc7b4;
+    font-size:13px;
+    padding:10px 18px;
+    border:1.4px solid rgba(255,255,255,0.18);
+  }
+  .btn-ghost:hover{border-color:rgba(255,255,255,0.35);}
+
+  .btn-row{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;justify-content:center;}
+
+  /* draw panel */
+  .draw-meta{
+    font-family:'Shippori Mincho',serif;
+    color:#f1e7cf;
+    margin-bottom:4px;
+  }
+  .draw-meta .seg{font-size:20px;letter-spacing:.1em;}
+  .draw-meta .count{
+    display:block;font-size:11px;color:#8f8a80;
+    font-family:'Zen Maru Gothic',sans-serif;
+    margin-top:2px;
+  }
+  .canvas-wrap{
+    position:relative;
+    margin:16px 0 14px;
+    background:var(--paper);
+    border-radius:18px;
+    padding:10px;
+    box-shadow:0 14px 30px -10px rgba(0,0,0,0.5), 0 2px 0 var(--paper-shadow);
+  }
+  .canvas-wrap::after{
+    content:"";
+    position:absolute;inset:10px;
+    border-radius:12px;
+    border:1px dashed rgba(0,0,0,0.15);
+    pointer-events:none;
+  }
+  #drawCanvas{
+    display:block;
+    width:240px;height:240px;
+    border-radius:12px;
+    touch-action:none;
+    cursor:crosshair;
+  }
+
+  .pass-icon{
+    font-size:34px;
+    margin-bottom:6px;
+  }
+
+  footer.credit{
+    margin-top:26px;
+    font-size:10.5px;
+    color:#5c574e;
+    letter-spacing:.08em;
+    z-index:2;
+  }
+
+  @media (max-width:360px){
+    :root{--circle:38px;--colgap:26px;--pad:20px;}
+    #drawCanvas{width:210px;height:210px;}
+  }
+
+  /* ---------- room screens ---------- */
+  .field{width:100%;text-align:left;margin-bottom:16px;}
+  .field label{
+    display:block;font-size:11.5px;color:#a89c85;
+    letter-spacing:.08em;margin-bottom:6px;
+  }
+  .field input{
+    width:100%;box-sizing:border-box;
+    background:rgba(255,255,255,0.06);
+    border:1.4px solid rgba(255,255,255,0.16);
+    border-radius:10px;padding:11px 14px;
+    font-family:'Shippori Mincho',serif;
+    font-size:14px;color:#f1e7cf;letter-spacing:.04em;
+  }
+  .field input::placeholder{color:#6e685d;}
+  .field input:focus{outline:none;border-color:var(--gold);}
+  .field.code input{
+    text-align:center;font-size:22px;letter-spacing:.3em;
+    text-transform:uppercase;
+  }
+  .error-text{
+    display:none;color:#d98a6a;font-size:12px;
+    margin:-8px 0 14px;line-height:1.6;
+  }
+  .error-text.show{display:block;}
+  .room-title{
+    font-family:'Shippori Mincho',serif;
+    font-size:15px;color:#f1e7cf;margin:0 0 4px;
+    letter-spacing:.08em;
+  }
+  .roomcode-display{
+    font-family:'Shippori Mincho',serif;
+    font-size:30px;font-weight:700;color:var(--gold);
+    letter-spacing:.32em;
+    padding:14px 10px 14px 18px;
+    border:1.4px dashed rgba(166,129,46,0.5);
+    border-radius:14px;
+    margin:10px 0 6px;
+    background:rgba(166,129,46,0.06);
+  }
+  .lobby-progress{
+    font-size:12.5px;color:#b9b09b;
+    margin:2px 0 20px;letter-spacing:.06em;
+  }
+  .copy-feedback{
+    font-size:11px;color:var(--gold);
+    height:14px;margin-top:-2px;margin-bottom:8px;
+    opacity:0;transition:opacity .3s ease;
+  }
+  .copy-feedback.show{opacity:1;}
+  .hint-text{
+    font-size:11.5px;color:#8f8a80;line-height:1.8;
+    margin:0 0 18px;
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <header class="title">
+    <h1>詠み人知らず</h1>
+    <p>ひと文字ずつ、描いてつなぐ五・七・五</p>
+  </header>
+
+  <div class="card-wrap" id="cardWrap">
+    <div class="dai-tag" id="daiTag"><span id="daiTagText"></span></div>
+    <div class="tanzaku" id="tanzaku">
+      <div class="hanko" id="hanko">詠</div>
+    </div>
+  </div>
+
+  <!-- home -->
+  <section class="panel active" id="panel-home">
+    <p class="error-text" id="setupWarning" style="margin-bottom:16px;">
+      Firebaseの設定が完了していません。HTMLファイル内の <code>FIREBASE_DB_URL</code> を、あなたのRealtime DatabaseのURLに書き換えてください。
+    </p>
+    <p class="lead">
+      参加者が一文字ずつ、それぞれのデバイスから文字を描いていく協力の言葉あそび。<br>
+      五・七・五、17個の丸に、思いつくままの一文字を。<br>
+      勝ち負けはなし。全員で描き終えたとき、誰も予想していなかった一句が生まれます。
+    </p>
+    <div class="btn-row" style="flex-direction:column;width:100%;max-width:220px;">
+      <button class="btn-primary" id="goCreateBtn" style="width:100%;">ルームをつくる</button>
+      <button class="btn-ghost" id="goJoinBtn" style="width:100%;">ルームに参加する</button>
+    </div>
+  </section>
+
+  <!-- create -->
+  <section class="panel" id="panel-create">
+    <h2>ルームをつくる</h2>
+    <div class="theme-field">
+      <label for="createThemeInput">お題（自由・省略できます）</label>
+      <input type="text" id="createThemeInput" placeholder="例：夏休み　※空欄なら自由題" maxlength="20">
+    </div>
+    <label class="toggle-row">
+      <input type="checkbox" id="createHideToggle" checked>
+      完成するまで、おたがいの文字を隠す
+    </label>
+    <p class="error-text" id="createError"></p>
+    <div class="btn-row">
+      <button class="btn-primary" id="createBtn">ルームを作成</button>
+      <button class="btn-ghost" id="createBackBtn">もどる</button>
+    </div>
+  </section>
+
+  <!-- join -->
+  <section class="panel" id="panel-join">
+    <h2>ルームに参加する</h2>
+    <div class="field code">
+      <label for="joinCodeInput">ルームコード</label>
+      <input type="text" id="joinCodeInput" placeholder="例：A3F9K" maxlength="6" autocapitalize="characters" autocomplete="off">
+    </div>
+    <p class="error-text" id="joinError"></p>
+    <div class="btn-row">
+      <button class="btn-primary" id="joinBtn">参加する</button>
+      <button class="btn-ghost" id="joinBackBtn">もどる</button>
+    </div>
+  </section>
+
+  <!-- lobby -->
+  <section class="panel" id="panel-lobby">
+    <p class="room-title">ルームコード</p>
+    <div class="roomcode-display" id="lobbyCode"></div>
+    <button class="btn-ghost" id="copyCodeBtn" style="font-size:11.5px;padding:6px 14px;margin-bottom:2px;">コードをコピー</button>
+    <p class="copy-feedback" id="copyFeedback">コピーしました</p>
+    <p class="hint-text">このコードをみんなに伝えて、同じルームから参加してもらいましょう。</p>
+    <p class="lobby-progress" id="lobbyProgress"></p>
+    <p class="error-text" id="lobbyError"></p>
+    <div class="btn-row">
+      <button class="btn-primary" id="lobbyWriteBtn">書く</button>
+      <button class="btn-ghost" id="lobbyLeaveBtn">ルームを出る</button>
+    </div>
+  </section>
+
+  <!-- draw -->
+  <section class="panel" id="panel-draw">
+    <div class="draw-meta">
+      <span class="seg" id="drawSeg"></span>
+      <span class="count" id="drawCount"></span>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="drawCanvas" width="240" height="240"></canvas>
+    </div>
+    <div class="btn-row">
+      <button class="btn-ghost" id="clearBtn">消す</button>
+      <button class="btn-primary" id="confirmBtn">この文字にする</button>
+    </div>
+  </section>
+
+  <!-- reveal -->
+  <section class="panel" id="panel-reveal">
+    <h2>できあがり</h2>
+    <p class="lead">みんなで描いた、世界にひとつの一句です。</p>
+    <div class="btn-row">
+      <button class="btn-primary" id="saveBtn">画像を保存</button>
+      <button class="btn-ghost" id="restartBtn">新しいルームをつくる</button>
+    </div>
+  </section>
+
+  <footer class="credit">詠み人知らず — 五七五リレー</footer>
+</div>
+
+<script>
+(function(){
+  const SEGMENTS = [
+    {label:'上五', count:5},
+    {label:'中七', count:7},
+    {label:'下五', count:5}
+  ];
+  const TOTAL = SEGMENTS.reduce((s,seg)=>s+seg.count,0);
+  const MAX_ROWS = Math.max(...SEGMENTS.map(s=>s.count));
+
+  const state = {
+    screen:'home',
+    roomCode:null,
+    room:null,
+    hideDuringPlay:true,
+    theme:'',
+    myIndex:null,
+    circles:[], // dom refs in flat index order
+    pollTimer:null
+  };
+
+  const $ = id=>document.getElementById(id);
+  const tanzaku = $('tanzaku');
+  const cardWrap = $('cardWrap');
+  const hanko = $('hanko');
+  const daiTag = $('daiTag');
+  const daiTagText = $('daiTagText');
+
+  function updateDaiTag(){
+    const t = (state.theme||'').trim();
+    if(t){
+      daiTagText.textContent = `お題「${t}」`;
+      daiTag.classList.add('show');
+    } else {
+      daiTag.classList.remove('show');
+    }
+  }
+  const panels = {
+    home:$('panel-home'), create:$('panel-create'), join:$('panel-join'),
+    lobby:$('panel-lobby'), draw:$('panel-draw'), reveal:$('panel-reveal')
+  };
+
+  /* ---------- Firebase Realtime Database config ----------
+     GitHub Pages のような静的ホスティングには「保存領域」がないため、
+     この下の FIREBASE_DB_URL に、あなた自身の Firebase Realtime Database の
+     URL を入れてください（無料のSparkプランで十分です）。
+     セットアップ手順は README や会話内の説明を参照してください。
+  ------------------------------------------------------------ */
+  const FIREBASE_DB_URL_RAW = "https://shirazu-d77b3-default-rtdb.asia-southeast1.firebasedatabase.app/";
+  const FIREBASE_DB_URL = FIREBASE_DB_URL_RAW.replace(/\/+$/, ""); // 末尾のスラッシュを除去
+  const isConfigured = FIREBASE_DB_URL && FIREBASE_DB_URL_RAW.indexOf("https://shirazu-d77b3-default-rtdb.asia-southeast1.firebasedatabase.app/") === -1;
+
+  /* ---------- storage helpers ---------- */
+  function normalizeRoom(raw){
+    if(!raw) return null;
+    const total = (typeof raw.total === 'number' && raw.total>0) ? raw.total : TOTAL;
+    let chars = raw.chars;
+    const arr = new Array(total).fill("");
+    if(Array.isArray(chars)){
+      for(let i=0;i<total;i++){
+        if(chars[i] != null) arr[i] = chars[i];
+      }
+    } else if(chars && typeof chars === 'object'){
+      // Firebaseは要素が飛び飛びの配列を {"2":"...", "5":"..."} のようなオブジェクトとして返すことがある
+      Object.keys(chars).forEach(k=>{
+        const idx = parseInt(k,10);
+        if(!isNaN(idx) && idx>=0 && idx<total) arr[idx] = chars[k];
+      });
+    }
+    const nextIndex = typeof raw.nextIndex === 'number'
+      ? raw.nextIndex
+      : arr.filter(x=>x).length;
+    return {
+      theme: raw.theme || "",
+      hideDuringPlay: raw.hideDuringPlay !== false,
+      total,
+      chars: arr,
+      nextIndex,
+      createdAt: raw.createdAt || Date.now()
+    };
+  }
+  async function loadRoom(code){
+    try{
+      const res = await fetch(`${FIREBASE_DB_URL}/rooms/${code}.json`);
+      if(!res.ok) return null;
+      const data = await res.json();
+      return normalizeRoom(data);
+    }catch(e){ return null; }
+  }
+  async function saveRoom(code, room){
+    try{
+      const res = await fetch(`${FIREBASE_DB_URL}/rooms/${code}.json`, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(room)
+      });
+      return res.ok;
+    }catch(e){ return false; }
+  }
+  const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  function genCode(len=5){
+    let s='';
+    for(let i=0;i<len;i++) s += CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)];
+    return s;
+  }
+  function showError(id, msg){
+    const el = $(id);
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function clearError(id){
+    const el = $(id);
+    el.textContent='';
+    el.classList.remove('show');
+  }
+  function setBusy(btn, busy){
+    btn.disabled = busy;
+    btn.style.opacity = busy ? 0.55 : 1;
+  }
+
+  function buildCard(){
+    let flatIndex = 0;
+    SEGMENTS.forEach(seg=>{
+      const col = document.createElement('div');
+      col.className='column';
+      const rows = document.createElement('div');
+      rows.className='rows';
+      const offset = (MAX_ROWS - seg.count) / 2;
+      rows.style.marginTop = `calc((var(--circle) + var(--gap)) * ${offset})`;
+
+      for(let i=0;i<seg.count;i++){
+        const circle = document.createElement('div');
+        circle.className='letter-circle';
+        circle.dataset.index = flatIndex;
+        const flap = document.createElement('div');
+        flap.className='flap';
+        const img = document.createElement('img');
+        img.alt='';
+        circle.appendChild(img);
+        circle.appendChild(flap);
+        rows.appendChild(circle);
+        state.circles.push({el:circle,img,flap});
+        flatIndex++;
+      }
+      const caption = document.createElement('div');
+      caption.className='caption';
+      caption.textContent = seg.label;
+      col.appendChild(rows);
+      col.appendChild(caption);
+      tanzaku.appendChild(col);
+    });
+    tanzaku.appendChild(hanko); // keep hanko on top (last child)
+  }
+  buildCard();
+
+  function segmentInfo(index){
+    let acc = 0;
+    for(const seg of SEGMENTS){
+      if(index < acc + seg.count){
+        return {label:seg.label, posInSeg:index-acc+1, segCount:seg.count};
+      }
+      acc += seg.count;
+    }
+  }
+
+  function goTo(screen){
+    state.screen = screen;
+    Object.values(panels).forEach(p=>p.classList.remove('active'));
+    panels[screen].classList.add('active');
+    if(screen==='home' || screen==='create' || screen==='join'){
+      cardWrap.classList.remove('show');
+    } else {
+      cardWrap.classList.add('show');
+    }
+    if(screen !== 'lobby'){ stopPolling(); }
+  }
+
+  function stopPolling(){
+    if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer=null; }
+  }
+  function startPolling(){
+    if(state.pollTimer) return;
+    state.pollTimer = setInterval(pollRoom, 2500);
+  }
+  async function pollRoom(){
+    if(state.screen !== 'lobby' || !state.roomCode) return;
+    const room = await loadRoom(state.roomCode);
+    if(!room) return;
+    state.room = room;
+    updateCardUI(room);
+    updateLobbyProgress(room);
+    if(room.chars.filter(x=>x).length >= room.total){
+      stopPolling();
+      goTo('reveal');
+      runReveal(room);
+    }
+  }
+
+  /* ---------- canvas drawing ---------- */
+  const canvas = $('drawCanvas');
+  const ctx = canvas.getContext('2d');
+  let dpr = Math.max(1, window.devicePixelRatio || 1);
+  function setupCanvas(){
+    const cssSize = 240;
+    canvas.width = cssSize*dpr;
+    canvas.height = cssSize*dpr;
+    ctx.scale(dpr,dpr);
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.strokeStyle = '#241F19';
+    ctx.lineWidth = 9;
+  }
+  setupCanvas();
+
+  let drawing=false, lastX=0, lastY=0, hasStroke=false;
+  function pos(e){
+    const r = canvas.getBoundingClientRect();
+    const cx = (e.touches? e.touches[0].clientX : e.clientX) - r.left;
+    const cy = (e.touches? e.touches[0].clientY : e.clientY) - r.top;
+    return [cx * (240/r.width), cy * (240/r.height)];
+  }
+  function start(e){
+    drawing=true; hasStroke=true;
+    [lastX,lastY]=pos(e);
+    ctx.beginPath();
+    ctx.moveTo(lastX,lastY);
+    e.preventDefault();
+  }
+  function move(e){
+    if(!drawing) return;
+    const [x,y]=pos(e);
+    ctx.lineTo(x,y);
+    ctx.stroke();
+    lastX=x; lastY=y;
+    e.preventDefault();
+  }
+  function end(){ drawing=false; }
+  canvas.addEventListener('pointerdown',start);
+  canvas.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',end);
+  canvas.addEventListener('touchstart',start,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('touchend',end);
+
+  function clearCanvas(){
+    ctx.clearRect(0,0,240,240);
+    hasStroke=false;
+  }
+  $('clearBtn').addEventListener('click', clearCanvas);
+
+  /* ---------- card UI helpers ---------- */
+  function updateCardUI(room){
+    state.circles.forEach((c,i)=>{
+      const filled = !!room.chars[i];
+      c.el.classList.toggle('filled', filled);
+      c.el.classList.toggle('current', i===room.nextIndex && !filled);
+      if(filled && !state.hideDuringPlay){
+        if(c.img.src !== room.chars[i]) c.img.src = room.chars[i];
+        c.el.classList.add('no-hide','revealed');
+      }
+    });
+  }
+  function updateLobbyProgress(room){
+    const filledCount = room.chars.filter(x=>x).length;
+    $('lobbyProgress').textContent = `${filledCount} / ${room.total} 文字が完成`;
+    const writeBtn = $('lobbyWriteBtn');
+    if(filledCount >= room.total){
+      writeBtn.disabled = true;
+      writeBtn.textContent = 'すべて完成しました';
+    } else {
+      writeBtn.disabled = false;
+      const info = segmentInfo(room.nextIndex);
+      writeBtn.textContent = `書く（${info.label} ${info.posInSeg}文字目）`;
+    }
+  }
+
+  /* ---------- home / create / join ---------- */
+  if(!isConfigured){
+    $('setupWarning').classList.add('show');
+    $('goCreateBtn').disabled = true;
+    $('goJoinBtn').disabled = true;
+    $('goCreateBtn').style.opacity = 0.5;
+    $('goJoinBtn').style.opacity = 0.5;
+  }
+  $('goCreateBtn').addEventListener('click', ()=>{
+    clearError('createError');
+    goTo('create');
+  });
+  $('goJoinBtn').addEventListener('click', ()=>{
+    clearError('joinError');
+    goTo('join');
+  });
+  $('createBackBtn').addEventListener('click', ()=> goTo('home'));
+  $('joinBackBtn').addEventListener('click', ()=> goTo('home'));
+
+  $('joinCodeInput').addEventListener('input', (e)=>{
+    e.target.value = e.target.value.toUpperCase();
+  });
+
+  $('createBtn').addEventListener('click', async ()=>{
+    clearError('createError');
+    const btn = $('createBtn');
+    setBusy(btn, true);
+    const theme = $('createThemeInput').value.trim();
+    const hide = $('createHideToggle').checked;
+    let code, existing, tries=0;
+    do{
+      code = genCode();
+      existing = await loadRoom(code);
+      tries++;
+    } while(existing && tries<5);
+    const room = {
+      theme, hideDuringPlay:hide, total:TOTAL,
+      chars:new Array(TOTAL).fill(""), nextIndex:0, createdAt:Date.now()
+    };
+    const ok = await saveRoom(code, room);
+    setBusy(btn, false);
+    if(!ok){
+      showError('createError','ルームの作成に失敗しました。もう一度お試しください。');
+      return;
+    }
+    state.roomCode = code;
+    state.room = room;
+    state.hideDuringPlay = hide;
+    state.theme = theme;
+    enterLobby();
+  });
+
+  $('joinBtn').addEventListener('click', async ()=>{
+    clearError('joinError');
+    const code = $('joinCodeInput').value.trim().toUpperCase();
+    if(!code){
+      showError('joinError','ルームコードを入力してください。');
+      return;
+    }
+    const btn = $('joinBtn');
+    setBusy(btn, true);
+    const room = await loadRoom(code);
+    setBusy(btn, false);
+    if(!room){
+      showError('joinError','ルームが見つかりません。コードを確認してください。');
+      return;
+    }
+    state.roomCode = code;
+    state.room = room;
+    state.hideDuringPlay = room.hideDuringPlay;
+    state.theme = room.theme;
+    enterLobby();
+  });
+
+  function resetCardVisuals(){
+    state.circles.forEach(c=>{
+      c.el.classList.remove('filled','unfold','revealed','current','no-hide');
+      c.img.src='';
+    });
+    hanko.classList.remove('in');
+  }
+
+  /* ---------- lobby ---------- */
+  function enterLobby(){
+    clearError('lobbyError');
+    resetCardVisuals();
+    updateDaiTag();
+    $('lobbyCode').textContent = state.roomCode;
+    updateCardUI(state.room);
+    updateLobbyProgress(state.room);
+    goTo('lobby');
+    startPolling();
+  }
+
+  $('copyCodeBtn').addEventListener('click', async ()=>{
+    try{
+      await navigator.clipboard.writeText(state.roomCode);
+    }catch(e){ /* clipboard unavailable, ignore */ }
+    const fb = $('copyFeedback');
+    fb.classList.add('show');
+    setTimeout(()=>fb.classList.remove('show'), 1500);
+  });
+
+  $('lobbyLeaveBtn').addEventListener('click', ()=>{
+    stopPolling();
+    state.roomCode = null;
+    state.room = null;
+    state.myIndex = null;
+    hanko.classList.remove('in');
+    daiTag.classList.remove('show');
+    goTo('home');
+  });
+
+  $('lobbyWriteBtn').addEventListener('click', async ()=>{
+    clearError('lobbyError');
+    stopPolling();
+    const btn = $('lobbyWriteBtn');
+    setBusy(btn, true);
+    const fresh = await loadRoom(state.roomCode);
+    setBusy(btn, false);
+    if(!fresh){
+      showError('lobbyError','ルーム情報の取得に失敗しました。もう一度お試しください。');
+      startPolling();
+      return;
+    }
+    state.room = fresh;
+    updateCardUI(fresh);
+    updateLobbyProgress(fresh);
+    if(fresh.nextIndex >= fresh.total || fresh.chars.filter(x=>x).length >= fresh.total){
+      goTo('reveal');
+      runReveal(fresh);
+      return;
+    }
+    state.myIndex = fresh.nextIndex;
+    startDraw(state.myIndex);
+  });
+
+  /* ---------- draw ---------- */
+  function startDraw(index){
+    clearCanvas();
+    const info = segmentInfo(index);
+    $('drawSeg').textContent = info.label;
+    $('drawCount').textContent = `${info.posInSeg} / ${info.segCount}文字目　（全体 ${index+1} / ${TOTAL}）`;
+    state.circles.forEach(c=>c.el.classList.remove('current'));
+    state.circles[index].el.classList.add('current');
+    goTo('draw');
+  }
+
+  $('confirmBtn').addEventListener('click', async ()=>{
+    if(!hasStroke){
+      // gentle nudge instead of silently ignoring
+      canvas.parentElement.animate(
+        [{transform:'translateX(0)'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(0)'}],
+        {duration:250}
+      );
+      return;
+    }
+    const btn = $('confirmBtn');
+    setBusy(btn, true);
+    const dataURL = canvas.toDataURL('image/png');
+    const fresh = await loadRoom(state.roomCode);
+    if(!fresh){
+      setBusy(btn, false);
+      canvas.parentElement.animate(
+        [{transform:'translateX(0)'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(0)'}],
+        {duration:250}
+      );
+      return;
+    }
+    if(fresh.chars[state.myIndex] || fresh.nextIndex !== state.myIndex){
+      // someone else already filled this slot in the meantime — move to the new open slot
+      setBusy(btn, false);
+      state.room = fresh;
+      if(fresh.nextIndex >= fresh.total){
+        goTo('reveal');
+        runReveal(fresh);
+        return;
+      }
+      state.myIndex = fresh.nextIndex;
+      startDraw(state.myIndex);
+      return;
+    }
+    fresh.chars[state.myIndex] = dataURL;
+    fresh.nextIndex = state.myIndex + 1;
+    const ok = await saveRoom(state.roomCode, fresh);
+    setBusy(btn, false);
+    if(!ok){
+      canvas.parentElement.animate(
+        [{transform:'translateX(0)'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(0)'}],
+        {duration:250}
+      );
+      return;
+    }
+    state.room = fresh;
+    if(fresh.nextIndex >= fresh.total){
+      goTo('reveal');
+      runReveal(fresh);
+    } else {
+      updateCardUI(fresh);
+      updateLobbyProgress(fresh);
+      goTo('lobby');
+      startPolling();
+    }
+  });
+
+  /* ---------- reveal ---------- */
+  function runReveal(room){
+    state.circles.forEach((c,i)=>{
+      if(room.chars[i] && c.img.src !== room.chars[i]) c.img.src = room.chars[i];
+    });
+    if(state.hideDuringPlay){
+      state.circles.forEach((c,i)=>{
+        setTimeout(()=>{
+          c.el.classList.add('unfold','revealed','filled');
+        }, 90*i);
+      });
+      setTimeout(stampHanko, 90*state.circles.length + 250);
+    } else {
+      state.circles.forEach(c=>c.el.classList.add('filled','no-hide','revealed'));
+      setTimeout(stampHanko, 200);
+    }
+  }
+  function stampHanko(){
+    hanko.classList.add('in');
+  }
+
+  $('restartBtn').addEventListener('click', ()=>{
+    stopPolling();
+    state.roomCode = null;
+    state.room = null;
+    state.myIndex = null;
+    state.theme = '';
+    resetCardVisuals();
+    daiTag.classList.remove('show');
+    goTo('home');
+  });
+
+  /* ---------- save composite image ---------- */
+  $('saveBtn').addEventListener('click', ()=>{
+    const SCALE = 3;
+    const CIRCLE = 44*SCALE, GAP = 10*SCALE, COLGAP = 34*SCALE, PAD = 30*SCALE;
+    const colHeight = MAX_ROWS*CIRCLE + (MAX_ROWS-1)*GAP;
+    const captionSpace = 46*SCALE;
+    const theme = (state.theme||'').trim();
+    const themeSpace = theme ? 50*SCALE : 0;
+    const W = PAD*2 + SEGMENTS.length*CIRCLE + (SEGMENTS.length-1)*COLGAP;
+    const H = PAD*2 + themeSpace + colHeight + captionSpace;
+
+    const out = document.createElement('canvas');
+    out.width = W; out.height = H;
+    const octx = out.getContext('2d');
+
+    // paper background
+    octx.fillStyle = '#EFE3C8';
+    roundRect(octx,0,0,W,H,24*SCALE);
+    octx.fill();
+
+    // theme title
+    if(theme){
+      octx.fillStyle = '#a6812e';
+      octx.font = `${16*SCALE}px "Shippori Mincho", serif`;
+      octx.textAlign = 'center';
+      octx.textBaseline = 'alphabetic';
+      octx.fillText(`お題「${theme}」`, W/2, PAD + 18*SCALE);
+    }
+
+    let flatIndex = 0;
+    SEGMENTS.forEach((seg, colIdxFromLeft0)=>{
+      // visual order is row-reverse: first segment (index0) is rightmost
+      const visualColIndex = SEGMENTS.length - 1 - colIdxFromLeft0;
+      const x = PAD + visualColIndex*(CIRCLE+COLGAP);
+      const offsetRows = (MAX_ROWS-seg.count)/2;
+      const yStart = PAD + themeSpace + offsetRows*(CIRCLE+GAP);
+
+      for(let i=0;i<seg.count;i++){
+        const y = yStart + i*(CIRCLE+GAP);
+        octx.save();
+        octx.beginPath();
+        octx.arc(x+CIRCLE/2, y+CIRCLE/2, CIRCLE/2, 0, Math.PI*2);
+        octx.strokeStyle = 'rgba(107,99,85,0.55)';
+        octx.lineWidth = 2*SCALE;
+        octx.stroke();
+        octx.clip();
+        const src = state.room ? state.room.chars[flatIndex] : null;
+        if(src){
+          const im = new Image();
+          im.src = src;
+          drawWhenReady(im, ()=>{
+            octx.drawImage(im, x, y, CIRCLE, CIRCLE);
+          });
+        }
+        octx.restore();
+        flatIndex++;
+      }
+      octx.fillStyle = '#6b6355';
+      octx.font = `${13*SCALE}px "Shippori Mincho", serif`;
+      octx.textAlign = 'center';
+      octx.fillText(seg.label, x+CIRCLE/2, PAD+themeSpace+colHeight+captionSpace*0.6);
+    });
+
+    // hanko stamp
+    const hx = PAD-6*SCALE, hy = H-PAD-40*SCALE;
+    octx.fillStyle = '#a5402a';
+    roundRect(octx, hx, hy, 40*SCALE, 40*SCALE, 7*SCALE);
+    octx.fill();
+    octx.fillStyle = '#f3e6cf';
+    octx.font = `${20*SCALE}px "Shippori Mincho", serif`;
+    octx.textAlign='center';
+    octx.textBaseline='middle';
+    octx.fillText('詠', hx+20*SCALE, hy+21*SCALE);
+
+    // small caption
+    octx.fillStyle = '#8f8577';
+    octx.font = `${11*SCALE}px "Zen Maru Gothic", sans-serif`;
+    octx.textAlign='right';
+    octx.textBaseline='alphabetic';
+    octx.fillText('詠み人知らず', W-PAD*0.6, H-14*SCALE);
+
+    setTimeout(()=>{
+      const a = document.createElement('a');
+      a.download = 'yomibito-shirazu.png';
+      a.href = out.toDataURL('image/png');
+      a.click();
+    }, 120);
+  });
+
+  function roundRect(c,x,y,w,h,r){
+    c.beginPath();
+    c.moveTo(x+r,y);
+    c.arcTo(x+w,y,x+w,y+h,r);
+    c.arcTo(x+w,y+h,x,y+h,r);
+    c.arcTo(x,y+h,x,y,r);
+    c.arcTo(x,y,x+w,y,r);
+    c.closePath();
+  }
+  function drawWhenReady(img, cb){
+    if(img.complete) cb();
+    else img.onload = cb;
+  }
+})();
+</script>
+</body>
+</html>
