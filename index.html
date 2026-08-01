@@ -580,7 +580,7 @@
   ------------------------------------------------------------ */
   const FIREBASE_DB_URL_RAW = "https://shirazu-d77b3-default-rtdb.asia-southeast1.firebasedatabase.app/";
   const FIREBASE_DB_URL = FIREBASE_DB_URL_RAW.replace(/\/+$/, ""); // 末尾のスラッシュを除去
-  const isConfigured = FIREBASE_DB_URL_RAW.indexOf("YOUR_FIREBASE_DATABASE_URL") === -1;
+  const isConfigured = FIREBASE_DB_URL && FIREBASE_DB_URL_RAW.indexOf("https://shirazu-d77b3-default-rtdb.asia-southeast1.firebasedatabase.app/") === -1;
 
   /* ---------- storage helpers ---------- */
   async function loadRoom(code){
@@ -693,7 +693,7 @@
     state.room = room;
     updateCardUI(room);
     updateLobbyProgress(room);
-    if(room.chars.filter(x=>x!=null).length >= room.total){
+    if(room.chars.filter(x=>x).length >= room.total){
       stopPolling();
       goTo('reveal');
       runReveal(room);
@@ -755,7 +755,7 @@
   /* ---------- card UI helpers ---------- */
   function updateCardUI(room){
     state.circles.forEach((c,i)=>{
-      const filled = room.chars[i] != null;
+      const filled = !!room.chars[i];
       c.el.classList.toggle('filled', filled);
       c.el.classList.toggle('current', i===room.nextIndex && !filled);
       if(filled && !state.hideDuringPlay){
@@ -765,7 +765,7 @@
     });
   }
   function updateLobbyProgress(room){
-    const filledCount = room.chars.filter(x=>x!=null).length;
+    const filledCount = room.chars.filter(x=>x).length;
     $('lobbyProgress').textContent = `${filledCount} / ${room.total} 文字が完成`;
     const writeBtn = $('lobbyWriteBtn');
     if(filledCount >= room.total){
@@ -815,7 +815,7 @@
     } while(existing && tries<5);
     const room = {
       theme, hideDuringPlay:hide, total:TOTAL,
-      chars:new Array(TOTAL).fill(null), nextIndex:0, createdAt:Date.now()
+      chars:new Array(TOTAL).fill(""), nextIndex:0, createdAt:Date.now()
     };
     const ok = await saveRoom(code, room);
     setBusy(btn, false);
@@ -906,7 +906,7 @@
     state.room = fresh;
     updateCardUI(fresh);
     updateLobbyProgress(fresh);
-    if(fresh.nextIndex >= fresh.total || fresh.chars.filter(x=>x!=null).length >= fresh.total){
+    if(fresh.nextIndex >= fresh.total || fresh.chars.filter(x=>x).length >= fresh.total){
       goTo('reveal');
       runReveal(fresh);
       return;
@@ -947,7 +947,7 @@
       );
       return;
     }
-    if(fresh.chars[state.myIndex] != null || fresh.nextIndex !== state.myIndex){
+    if(fresh.chars[state.myIndex] || fresh.nextIndex !== state.myIndex){
       // someone else already filled this slot in the meantime — move to the new open slot
       setBusy(btn, false);
       state.room = fresh;
